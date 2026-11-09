@@ -1,0 +1,94 @@
+---
+/**
+ * Renders the CMS's rich text. Text goes through Astro's escaping and links are
+ * restricted to safe protocols, so the output is safe without an HTML sanitiser.
+ */
+import { Image } from 'astro:assets';
+
+import type { Block } from '../lib/cms';
+
+interface Props {
+  nodes: Block[];
+}
+
+const { nodes } = Astro.props;
+const safeHref = (url: string) => (/^(https?:|mailto:|\/|#)/i.test(url) ? url : '#');
+---
+
+{
+  nodes.map((node) => {
+    switch (node.type) {
+      case 'text': {
+        let content = <Fragment>{node.text}</Fragment>;
+        if (node.code) content = <code>{content}</code>;
+        if (node.bold) content = <strong>{content}</strong>;
+        if (node.italic) content = <em>{content}</em>;
+        if (node.underline) content = <u>{content}</u>;
+        if (node.strikethrough) content = <s>{content}</s>;
+        return content;
+      }
+      case 'link':
+        return (
+          <a href={safeHref(node.url)} rel="noopener">
+            <Astro.self nodes={node.children} />
+          </a>
+        );
+      case 'paragraph':
+        return (
+          <p>
+            <Astro.self nodes={node.children} />
+          </p>
+        );
+      case 'heading': {
+        const Tag = `h${Math.max(2, node.level)}`;
+        return (
+          <Tag>
+            <Astro.self nodes={node.children} />
+          </Tag>
+        );
+      }
+      case 'quote':
+        return (
+          <blockquote>
+            <Astro.self nodes={node.children} />
+          </blockquote>
+        );
+      case 'code':
+        return (
+          <pre>
+            <code>
+              <Astro.self nodes={node.children} />
+            </code>
+          </pre>
+        );
+      case 'list': {
+        const List = node.format === 'ordered' ? 'ol' : 'ul';
+        return (
+          <List>
+            <Astro.self nodes={node.children} />
+          </List>
+        );
+      }
+      case 'list-item':
+        return (
+          <li>
+            <Astro.self nodes={node.children} />
+          </li>
+        );
+      case 'image':
+        return (
+          <Image
+            src={node.image.url}
+            alt={node.image.alternativeText ?? ''}
+            width={node.image.width}
+            height={node.image.height}
+            format="webp"
+            sizes="(max-width: 768px) 100vw, 68ch"
+            widths={[480, 800, 1200].filter((width) => width < node.image.width).concat(node.image.width)}
+          />
+        );
+      default:
+        return null;
+    }
+  })
+}

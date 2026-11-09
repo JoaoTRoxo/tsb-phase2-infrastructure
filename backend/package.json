@@ -1,0 +1,43 @@
+{
+  "name": "tsb-travel-blog-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Strapi CMS for the travellers blog",
+  "scripts": {
+    "build": "strapi build",
+    "console": "strapi console",
+    "dev": "strapi develop",
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "strapi": "strapi",
+    "upgrade": "npx @strapi/upgrade latest",
+    "upgrade:dry": "npx @strapi/upgrade latest --dry",
+    "test": "node --test tests/backend.test.mjs",
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "@strapi/database": "5.61.1",
+    "@strapi/plugin-users-permissions": "5.61.1",
+    "@strapi/strapi": "5.61.1",
+    "better-sqlite3": "12.11.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.0.0",
+    "pg": "8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22.0.0 <=26.x.x",
+    "npm": ">=6.0.0"
+  },
+  "strapi": {
+    "uuid": "c6b0c470-10d0-43f4-b916-3271ee694912",
+    "telemetryDisabled": true
+  }
+}

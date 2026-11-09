@@ -1,0 +1,73 @@
+name: Frontend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Sent by the CMS when content is published (backend/src/bootstrap/rebuild.ts).
+  repository_dispatch:
+    types: [content-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npx astro check
+
+      # Pull requests build from the demo content, so they need no CMS or secrets
+      # and cannot publish draft work. Everything else builds from the live CMS.
+      - name: Build
+        env:
+          STRAPI_URL: ${{ github.event_name != 'pull_request' && vars.STRAPI_URL || '' }}
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: npm run build
+
+      - name: Test the built site
+        env:
+          STRAPI_URL: ${{ github.event_name != 'pull_request' && vars.STRAPI_URL || '' }}
+        run: npm test
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: frontend/dist
+          retention-days: 7
+
+  frontend-deploy:
+    if: github.event_name != 'pull_request'
+    needs: frontend-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # One deployment at a time. A newer rebuild waits for the running one to finish.
+    concurrency: cloudflare-pages
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site --project-name=${{ vars.CLOUDFLARE_PROJECT }} --branch=main

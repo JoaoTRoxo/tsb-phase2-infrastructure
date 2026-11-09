@@ -1,0 +1,45 @@
+# Production setup for any Linux server with Docker: the CMS and its database.
+# Run scripts/generate-env.sh once, then: docker compose up -d
+#
+# Everything that must survive is in the two named volumes below. A container
+# can be deleted and recreated freely, a volume cannot.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: strapi
+      POSTGRES_USER: strapi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run scripts/generate-env.sh first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U strapi -d strapi']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    # Pulled from the registry by default; `docker compose up --build` builds it here.
+    image: ${BACKEND_IMAGE:-ghcr.io/joaotroxo/tsb-phase2-infrastructure/backend:latest}
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: strapi
+      DATABASE_USERNAME: strapi
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - '${BACKEND_PORT:-1337}:1337'
+    volumes:
+      - uploads:/app/public/uploads
+
+volumes:
+  postgres-data:
+  uploads:

@@ -1,0 +1,139 @@
+---
+import type { GetStaticPaths } from 'astro';
+
+import Blocks from '../../../components/Blocks.astro';
+import Photo from '../../../components/Photo.astro';
+import Stamp from '../../../components/Stamp.astro';
+import { DEFAULT_LOCALE, LOCALES, localePath, t, type Locale } from '../../../i18n/ui';
+import Base from '../../../layouts/Base.astro';
+import { getContent, readingMinutes, type Article } from '../../../lib/cms';
+
+export const getStaticPaths = (async () => {
+  const paths = [];
+  for (const locale of LOCALES) {
+    const { articles } = await getContent(locale);
+    for (const [index, article] of articles.entries()) {
+      paths.push({
+        params: { locale: locale === DEFAULT_LOCALE ? undefined : locale, slug: article.slug },
+        props: { locale, article, next: articles[(index + 1) % articles.length] },
+      });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { locale, article, next } = Astro.props as { locale: Locale; article: Article; next: Article };
+
+const alternates = Object.fromEntries(
+  Object.entries(article.translations).map(([code, slug]) => [code, localePath(code as Locale, `/articles/${slug}`)])
+);
+---
+
+<Base locale={locale} title={article.title} description={article.excerpt} alternates={alternates} active="articles">
+  <div class="reading-progress" aria-hidden="true"></div>
+
+  <article>
+    <header class="mx-auto max-w-3xl px-4 pt-14 text-center sm:px-6">
+      <Stamp locale={locale} location={article.location} date={article.date} class="text-accent" />
+      <h1 class="mt-4 text-4xl leading-[1.08] sm:text-6xl" transition:name={`title-${article.id}`}>{article.title}</h1>
+      <p class="text-soft mt-5 text-xl leading-relaxed">{article.excerpt}</p>
+      <p class="text-soft mt-5 text-sm">
+        {
+          article.author && (
+            <>
+              {t(locale, 'article.by')} <span class="text-ink font-semibold">{article.author.name}</span> ·{' '}
+            </>
+          )
+        }
+        {t(locale, 'article.minutes', { n: readingMinutes(article.body) })}
+      </p>
+    </header>
+
+    <div class="mx-auto mt-10 max-w-6xl sm:px-6" transition:name={`cover-${article.id}`}>
+      <Photo picture={article.cover} sizes="(max-width: 1152px) 100vw, 1152px" eager class="max-h-[78vh] w-full object-cover sm:rounded-2xl" />
+    </div>
+
+    <div class="prose mt-12 px-4 sm:px-0">
+      <Blocks nodes={article.body} />
+    </div>
+
+    <footer class="mx-auto mt-14 max-w-[68ch] px-4 sm:px-0">
+      {
+        article.tags.length > 0 && (
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-soft text-sm">{t(locale, 'article.tags')}</span>
+            {article.tags.map((tag) => (
+              <a class="chip" href={`${localePath(locale, '/articles')}?tag=${tag.slug}`}>
+                {tag.name}
+              </a>
+            ))}
+          </div>
+        )
+      }
+
+      {
+        article.author && (
+          <div class="border-line mt-10 flex items-center gap-4 border-t pt-8">
+            {article.author.avatar && (
+              <Photo picture={article.author.avatar} sizes="64px" class="h-16 w-16 rounded-full object-cover" />
+            )}
+            <div>
+              <p class="font-display text-lg">{article.author.name}</p>
+              <p class="text-soft text-sm">{article.author.role}</p>
+            </div>
+          </div>
+        )
+      }
+
+      <div class="border-line mt-10 flex flex-wrap justify-between gap-4 border-t pt-8">
+        <a href={localePath(locale, '/articles')} class="text-accent font-medium hover:underline">← {t(locale, 'article.back')}</a>
+        {
+          next.id !== article.id && (
+            <a href={localePath(locale, `/articles/${next.slug}`)} class="text-right hover:underline">
+              <span class="text-soft block text-sm">{t(locale, 'article.next')}</span>
+              <span class="font-display text-lg">{next.title}</span>
+            </a>
+          )
+        }
+      </div>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  /* A scroll-linked progress bar, with no JavaScript. Browsers without support skip it. */
+  .reading-progress {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reading-progress {
+      display: none !important;
+    }
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .reading-progress {
+      animation: grow linear both;
+      animation-timeline: scroll(root);
+      background: var(--accent);
+      display: block;
+      height: 3px;
+      left: 0;
+      position: fixed;
+      right: 0;
+      top: 0;
+      transform-origin: left;
+      z-index: 40;
+    }
+
+    @keyframes grow {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+  }
+</style>

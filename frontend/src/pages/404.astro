@@ -1,0 +1,18 @@
+---
+// One bilingual page: static hosts serve a single 404 for the whole site.
+import Base from '../layouts/Base.astro';
+import { localePath, t } from '../i18n/ui';
+---
+
+<Base locale="en" title={t('en', 'notfound.title')}>
+  <section class="mx-auto max-w-2xl px-4 py-28 text-center">
+    <h1 class="text-5xl">{t('en', 'notfound.title')}</h1>
+    <p class="text-soft mt-4 text-lg">{t('en', 'notfound.text')}</p>
+    <a href={localePath('en')} class="text-accent mt-3 inline-block font-semibold hover:underline">{t('en', 'notfound.home')}</a>
+    <div lang="pt-PT" class="border-line mt-12 border-t pt-12">
+      <h2 class="text-3xl">{t('pt', 'notfound.title')}</h2>
+      <p class="text-soft mt-3">{t('pt', 'notfound.text')}</p>
+      <a href={localePath('pt')} class="text-accent mt-3 inline-block font-semibold hover:underline">{t('pt', 'notfound.home')}</a>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,75 @@
+---
+import ArticleCard from '../../../components/ArticleCard.astro';
+import { count, localeStaticPaths, t, type Locale } from '../../../i18n/ui';
+import Base from '../../../layouts/Base.astro';
+import { blocksToText, getContent, tagsOf } from '../../../lib/cms';
+import { normalizeForSearch } from '../../../lib/search';
+
+export const getStaticPaths = localeStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const { articles } = await getContent(locale);
+const tags = tagsOf(articles, locale);
+
+const searchText = (article: (typeof articles)[number]) =>
+  normalizeForSearch(
+    [article.title, article.excerpt, article.location, article.author?.name, ...article.tags.map((tag) => tag.name), blocksToText(article.body)].join(' ')
+  );
+---
+
+<Base locale={locale} title={t(locale, 'articles.title')} section="/articles" active="articles">
+  <section
+    class="mx-auto max-w-6xl px-4 pt-14 sm:px-6"
+    data-articles
+    data-count-one={count(locale, 'articles.count', 1)}
+    data-count-other={t(locale, 'articles.count.other', { n: '{n}' })}
+    data-page-template={t(locale, 'articles.page', { n: '{n}', total: '{total}' })}
+  >
+    <h1 class="text-5xl">{t(locale, 'articles.title')}</h1>
+    <p class="text-soft mt-3 text-lg">{t(locale, 'articles.intro')}</p>
+
+    <div class="mt-8 max-w-xl">
+      <label for="search" class="sr-only">{t(locale, 'articles.searchLabel')}</label>
+      <input
+        id="search"
+        type="search"
+        data-search
+        autocomplete="off"
+        placeholder={t(locale, 'articles.search')}
+        class="border-line bg-card placeholder:text-soft w-full rounded-lg border px-4 py-3"
+      />
+    </div>
+
+    <div class="mt-4 flex flex-wrap gap-2">
+      {
+        tags.map((tag) => (
+          <button type="button" class="chip" data-tag={tag.slug} aria-pressed="false">
+            {tag.name}
+          </button>
+        ))
+      }
+    </div>
+
+    <p class="text-soft mt-6 text-sm" data-count aria-live="polite">{count(locale, 'articles.count', articles.length)}</p>
+
+    <div class="mt-6 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        articles.map((article) => (
+          <div data-article data-tags={article.tags.map((tag) => tag.slug).join(' ')} data-text={searchText(article)}>
+            <ArticleCard article={article} locale={locale} />
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="text-soft mt-10 text-center" data-empty hidden>{t(locale, 'articles.empty')}</p>
+
+    <nav class="mt-14 flex items-center justify-center gap-6" data-pager hidden>
+      <button type="button" class="chip disabled:cursor-default disabled:opacity-40" data-prev>← {t(locale, 'articles.prev')}</button>
+      <span class="text-soft text-sm" data-page></span>
+      <button type="button" class="chip disabled:cursor-default disabled:opacity-40" data-next>{t(locale, 'articles.next')} →</button>
+    </nav>
+  </section>
+
+  <script src="../../../scripts/articles.ts"></script>
+</Base>

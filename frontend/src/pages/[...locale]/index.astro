@@ -1,0 +1,89 @@
+---
+import ArticleCard from '../../components/ArticleCard.astro';
+import Blocks from '../../components/Blocks.astro';
+import Photo from '../../components/Photo.astro';
+import Stamp from '../../components/Stamp.astro';
+import { localePath, localeStaticPaths, t, type Locale } from '../../i18n/ui';
+import Base from '../../layouts/Base.astro';
+import { getContent } from '../../lib/cms';
+
+export const getStaticPaths = localeStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const { articles, gallery } = await getContent(locale);
+const [latest, ...others] = articles;
+const href = latest && localePath(locale, `/articles/${latest.slug}`);
+---
+
+<Base locale={locale}>
+  {
+    latest && (
+      <article>
+        <a href={href} class="group relative block overflow-hidden">
+          <div transition:name={`cover-${latest.id}`}>
+            <Photo picture={latest.cover} sizes="100vw" eager class="h-[62vh] min-h-[420px] w-full object-cover" />
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+          <div class="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-4 pb-10 text-white sm:px-6 sm:pb-14">
+            <p class="stamp text-white/85">{t(locale, 'home.latest')}</p>
+            <h1 class="mt-3 max-w-3xl text-4xl leading-[1.05] group-hover:underline sm:text-6xl" transition:name={`title-${latest.id}`}>
+              {latest.title}
+            </h1>
+            <Stamp locale={locale} location={latest.location} date={latest.date} class="mt-4 text-white/85" />
+          </div>
+        </a>
+
+        <div class="prose mt-12 px-4 sm:px-0">
+          <Blocks nodes={latest.body.filter((node) => node.type === 'paragraph').slice(0, 1)} />
+        </div>
+        <p class="mx-auto mt-6 max-w-[68ch] px-4 sm:px-0">
+          <a href={href} class="text-accent font-semibold hover:underline">
+            {t(locale, 'home.read')} →
+          </a>
+        </p>
+      </article>
+    )
+  }
+
+  {
+    others.length > 0 && (
+      <section class="mx-auto mt-20 max-w-6xl px-4 sm:px-6">
+        <div class="flex items-baseline justify-between gap-4">
+          <h2 class="text-3xl">{t(locale, 'home.more')}</h2>
+          <a href={localePath(locale, '/articles')} class="text-accent font-medium hover:underline">
+            {t(locale, 'home.all')} →
+          </a>
+        </div>
+        <div class="mt-8 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          {others.slice(0, 3).map((article) => (
+            <ArticleCard article={article} locale={locale} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    gallery.length > 0 && (
+      <section class="mx-auto mt-20 max-w-6xl px-4 sm:px-6">
+        <div class="flex items-baseline justify-between gap-4">
+          <h2 class="text-3xl">{t(locale, 'home.gallery')}</h2>
+          <a href={localePath(locale, '/gallery')} class="text-accent font-medium hover:underline">
+            {t(locale, 'home.galleryAll')} →
+          </a>
+        </div>
+        <div class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {gallery.slice(0, 4).map((item) => (
+            <a href={localePath(locale, '/gallery')} class="overflow-hidden rounded-lg">
+              <Photo
+                picture={item.image}
+                sizes="(max-width: 768px) 50vw, 25vw"
+                class="aspect-square w-full object-cover transition-transform duration-500 hover:scale-105"
+              />
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+</Base>

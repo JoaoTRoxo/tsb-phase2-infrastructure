@@ -1,0 +1,5 @@
+import { factories } from '@strapi/strapi';
+
+export default factories.createCoreRouter('api::gallery-image.gallery-image', {
+  only: ['find', 'findOne'],
+});

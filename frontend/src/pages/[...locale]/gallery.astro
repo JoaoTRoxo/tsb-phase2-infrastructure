@@ -1,0 +1,108 @@
+---
+import { getImage } from 'astro:assets';
+
+import Photo from '../../components/Photo.astro';
+import { formatDate, localeStaticPaths, t, type Locale } from '../../i18n/ui';
+import Base from '../../layouts/Base.astro';
+import { getContent, tagsOf } from '../../lib/cms';
+
+export const getStaticPaths = localeStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const { gallery } = await getContent(locale);
+const tags = tagsOf(gallery, locale);
+
+const items = await Promise.all(
+  gallery.map(async (item) => {
+    const full = await getImage({
+      src: item.image.src,
+      width: Math.min(2000, item.image.width),
+      height: Math.round((Math.min(2000, item.image.width) * item.image.height) / item.image.width),
+      format: 'webp',
+    });
+    const credits = [
+      item.location,
+      item.takenOn && formatDate(locale, item.takenOn),
+      item.author && `${t(locale, 'gallery.by')} ${item.author.name}`,
+    ].filter(Boolean);
+    return { ...item, fullSrc: full.src, meta: credits.join(' · ') };
+  })
+);
+---
+
+<Base locale={locale} title={t(locale, 'gallery.title')} section="/gallery" active="gallery">
+  <section class="mx-auto max-w-6xl px-4 pt-14 sm:px-6" data-gallery>
+    <h1 class="text-5xl">{t(locale, 'gallery.title')}</h1>
+    <p class="text-soft mt-3 text-lg">{t(locale, 'gallery.intro')}</p>
+
+    <div class="mt-8 flex flex-wrap gap-2">
+      <button type="button" class="chip" data-clear aria-pressed="true">{t(locale, 'gallery.all')}</button>
+      {
+        tags.map((tag) => (
+          <button type="button" class="chip" data-tag={tag.slug} aria-pressed="false">
+            {tag.name}
+          </button>
+        ))
+      }
+    </div>
+
+    <div class="mt-8 columns-1 gap-4 sm:columns-2 lg:columns-3">
+      {
+        items.map((item) => (
+          <a
+            href={item.fullSrc}
+            class="group relative mb-4 block break-inside-avoid overflow-hidden rounded-lg"
+            data-item
+            data-tags={item.tags.map((tag) => tag.slug).join(' ')}
+            data-full={item.fullSrc}
+            data-title={item.title}
+            data-caption={item.caption ?? ''}
+            data-meta={item.meta}
+            aria-label={t(locale, 'gallery.open', { title: item.title })}
+          >
+            <Photo picture={item.image} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" class="w-full transition-transform duration-500 group-hover:scale-[1.03]" />
+            <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-12 text-left text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+              <span class="font-display block text-lg">{item.title}</span>
+              {item.location && <span class="block text-sm text-white/80">{item.location}</span>}
+            </span>
+          </a>
+        ))
+      }
+    </div>
+
+    <p class="text-soft mt-10 text-center" data-empty hidden>{t(locale, 'gallery.empty')}</p>
+
+    <dialog class="lightbox" data-lightbox aria-label={t(locale, 'gallery.title')}>
+      <figure class="flex max-h-dvh flex-col items-center p-3 sm:p-6">
+        <img data-lightbox-image alt="" class="max-h-[80dvh] max-w-full rounded-lg object-contain" />
+        <figcaption class="mt-3 max-w-2xl text-center text-white">
+          <p class="font-display text-xl" data-lightbox-title></p>
+          <p class="mt-1 text-white/80" data-lightbox-caption></p>
+          <p class="mt-1 text-sm text-white/60" data-lightbox-meta></p>
+        </figcaption>
+      </figure>
+      <button type="button" class="control top-4 right-4" data-close aria-label={t(locale, 'gallery.close')}>✕</button>
+      <button type="button" class="control top-1/2 left-3 -translate-y-1/2" data-previous aria-label={t(locale, 'gallery.prev')}>←</button>
+      <button type="button" class="control top-1/2 right-3 -translate-y-1/2" data-next aria-label={t(locale, 'gallery.next')}>→</button>
+    </dialog>
+  </section>
+
+  <script src="../../scripts/gallery.ts"></script>
+</Base>
+
+<style>
+  .control {
+    background: rgb(255 255 255 / 0.14);
+    border-radius: 999px;
+    color: white;
+    cursor: pointer;
+    font-size: 1.25rem;
+    height: 3rem;
+    position: fixed;
+    width: 3rem;
+  }
+
+  .control:hover {
+    background: rgb(255 255 255 / 0.28);
+  }
+</style>

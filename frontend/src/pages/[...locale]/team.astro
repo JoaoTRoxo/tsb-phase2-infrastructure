@@ -1,0 +1,45 @@
+---
+import Photo from '../../components/Photo.astro';
+import { count, localeStaticPaths, t, type Locale } from '../../i18n/ui';
+import Base from '../../layouts/Base.astro';
+import { getContent } from '../../lib/cms';
+
+export const getStaticPaths = localeStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const { team, articles } = await getContent(locale);
+const storiesBy = (slug: string) => articles.filter((article) => article.author?.slug === slug).length;
+---
+
+<Base locale={locale} title={t(locale, 'team.title')} section="/team" active="team">
+  <section class="mx-auto max-w-6xl px-4 pt-14 sm:px-6">
+    <h1 class="text-5xl">{t(locale, 'team.title')}</h1>
+    <p class="text-soft mt-3 text-lg">{t(locale, 'team.intro')}</p>
+
+    <div class="mt-10 grid gap-6 md:grid-cols-3">
+      {
+        team.map((person) => (
+          <article class="border-line bg-card rounded-2xl border p-7">
+            {person.avatar && <Photo picture={person.avatar} sizes="112px" class="h-28 w-28 rounded-full object-cover" />}
+            <h2 class="mt-5 text-2xl">{person.name}</h2>
+            <p class="text-accent mt-1 text-sm font-semibold">{person.role}</p>
+            <p class="text-soft mt-4 leading-relaxed">{person.bio}</p>
+            <p class="text-soft mt-5 text-sm">
+              {person.homeBase && (
+                <>
+                  {t(locale, 'team.base')} {person.homeBase} ·{' '}
+                </>
+              )}
+              {count(locale, 'team.stories', storiesBy(person.slug))}
+            </p>
+            {person.website && (
+              <a href={person.website} rel="noopener" class="text-sea mt-2 inline-block text-sm hover:underline">
+                {person.website.replace(/^https?:\/\//, '')}
+              </a>
+            )}
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</Base>

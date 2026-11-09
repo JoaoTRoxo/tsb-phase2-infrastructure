@@ -1,0 +1,28 @@
+---
+import { localePath, type Locale } from '../i18n/ui';
+import type { Article } from '../lib/cms';
+import Photo from './Photo.astro';
+import Stamp from './Stamp.astro';
+
+interface Props {
+  article: Article;
+  locale: Locale;
+}
+
+const { article, locale } = Astro.props;
+---
+
+<a href={localePath(locale, `/articles/${article.slug}`)} class="group block">
+  <div class="overflow-hidden rounded-xl" transition:name={`cover-${article.id}`}>
+    <Photo
+      picture={article.cover}
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+      class="aspect-[3/2] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+    />
+  </div>
+  <Stamp locale={locale} location={article.location} date={article.date} class="text-accent mt-4" />
+  <h3 class="mt-2 text-2xl leading-tight group-hover:underline" transition:name={`title-${article.id}`}>
+    {article.title}
+  </h3>
+  <p class="text-soft mt-2 line-clamp-3">{article.excerpt}</p>
+</a>

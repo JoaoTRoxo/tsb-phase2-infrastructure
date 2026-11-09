@@ -1,0 +1,28 @@
+---
+/** Responsive, optimised image, generated at build time. */
+import { Image } from 'astro:assets';
+
+import type { Picture } from '../lib/cms';
+
+interface Props {
+  picture: Picture;
+  sizes: string;
+  class?: string;
+  eager?: boolean;
+}
+
+const { picture, sizes, class: className, eager = false } = Astro.props;
+const widths = [320, 480, 800, 1200, 1600].filter((width) => width < picture.width).concat(picture.width);
+---
+
+<Image
+  src={picture.src as string}
+  alt={picture.alt}
+  width={picture.width}
+  height={picture.height}
+  widths={widths}
+  sizes={sizes}
+  format="webp"
+  class={className}
+  loading={eager ? 'eager' : 'lazy'}
+/>
