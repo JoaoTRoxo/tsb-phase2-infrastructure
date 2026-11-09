@@ -53,7 +53,8 @@ jobs:
           retention-days: 7
 
   frontend-deploy:
-    if: github.event_name != 'pull_request'
+    # Skipped until Cloudflare is configured, so a new fork is not a wall of red.
+    if: github.event_name != 'pull_request' && vars.CLOUDFLARE_PROJECT != ''
     needs: frontend-build
     runs-on: ubuntu-latest
     timeout-minutes: 10

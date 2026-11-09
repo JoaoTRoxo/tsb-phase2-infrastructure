@@ -118,7 +118,8 @@ Then set these in the GitHub repository, under Settings, Secrets and variables, 
 | Variable | `STRAPI_URL` | The public address of the CMS, reachable from GitHub |
 | Variable | `SITE_URL` | The public address of the site |
 
-Each push to `main` now tests and deploys the site.
+Each push to `main` now tests and deploys the site. Until `CLOUDFLARE_PROJECT` is set, the
+deploy job is skipped and only the build and tests run.
 
 ### 3. Connect publishing to rebuilds
 
