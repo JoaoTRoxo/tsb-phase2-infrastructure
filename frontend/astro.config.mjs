@@ -1,13 +1,18 @@
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
+import { loadEnv } from 'vite';
+
+// Astro's config runs before .env is loaded, so it has to be read here. Real
+// environment variables take priority over the file.
+const env = loadEnv(process.env.NODE_ENV ?? 'production', process.cwd(), '');
 
 // The build downloads and optimises every image from the CMS, so the published site
 // is self-contained and keeps working when the CMS is down.
-const cms = process.env.STRAPI_URL ? new URL(process.env.STRAPI_URL) : undefined;
+const cms = env.STRAPI_URL ? new URL(env.STRAPI_URL) : undefined;
 
 export default defineConfig({
-  site: process.env.SITE_URL || 'https://tsb-travel-blog.pages.dev',
+  site: env.SITE_URL || 'https://tsb-travel-blog.pages.dev',
   output: 'static',
   trailingSlash: 'ignore',
   i18n: {

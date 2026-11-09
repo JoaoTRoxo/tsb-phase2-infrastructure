@@ -52,12 +52,12 @@ Frontend, at <http://localhost:4321>:
 cd frontend
 cp .env.example .env
 npm ci
-STRAPI_URL=http://localhost:1337 npm run dev
+npm run dev
 ```
 
-With no `STRAPI_URL`, the site is built from the demo content in `backend/seed`, so the
-frontend can also be worked on with no backend running. Pages read the CMS once per server
-start in this mode, so restart `npm run dev` to see new content.
+Remove `STRAPI_URL` from `.env` to use the demo content in `backend/seed` instead, so that the
+frontend can be worked on with no backend running. Content is read once per server start, so
+restart `npm run dev` to see new content.
 
 ## Run in production mode on a local machine
 
