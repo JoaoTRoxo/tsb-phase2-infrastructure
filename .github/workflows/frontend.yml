@@ -66,6 +66,16 @@ jobs:
           name: site
           path: site
 
+      # Creates the Pages project on the first deployment. After that it already
+      # exists, and this step's failure is expected and ignored.
+      - name: Create the Cloudflare Pages project if needed
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ${{ vars.CLOUDFLARE_PROJECT }} --production-branch=main
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
