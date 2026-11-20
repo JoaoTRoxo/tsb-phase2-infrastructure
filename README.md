@@ -2,7 +2,8 @@
 
 Técnico Solar Boat, Autonomous Systems recruitment, Phase 2: Web Development & Infrastructure.
 
-A statically built, bilingual blog in Astro and Tailwind CSS. Its content is managed without
+A statically built, bilingual blog in Astro and Tailwind CSS, live at
+<https://tsb-far-enough.pages.dev>. Its content is managed without
 code in a Strapi CMS, and publishing there rebuilds and redeploys the site automatically.
 
 ```mermaid
@@ -102,19 +103,14 @@ If the registry package is private, run `docker login ghcr.io` on the server fir
 
 ### 2. Frontend, on Cloudflare Pages
 
-Create the Pages project once:
-
-```bash
-npx wrangler pages project create far-enough --production-branch=main
-```
-
-Then set these in the GitHub repository, under Settings, Secrets and variables, Actions:
+Set these in the GitHub repository, under Settings, Secrets and variables, Actions. The first
+deployment creates the Pages project.
 
 | Kind | Name | Value |
 | --- | --- | --- |
 | Secret | `CLOUDFLARE_API_TOKEN` | A token with the *Cloudflare Pages: Edit* permission |
 | Secret | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
-| Variable | `CLOUDFLARE_PROJECT` | `far-enough` |
+| Variable | `CLOUDFLARE_PROJECT` | A project name, for example `tsb-far-enough` |
 | Variable | `STRAPI_URL` | The public address of the CMS, reachable from GitHub |
 | Variable | `SITE_URL` | The public address of the site |
 

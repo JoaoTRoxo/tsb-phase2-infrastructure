@@ -82,8 +82,10 @@ tests out of the pipeline. So `backend/src/bootstrap/rebuild.ts` subscribes to S
 events and calls GitHub directly.
 
 - Only changes that alter the public site trigger it. Saving a draft does not.
-- Changes are batched: the first starts a 60-second window, and publishing ten articles costs one
-  deployment.
+- Changes are batched: the first starts a fixed 60-second window, and everything published inside
+  it shares one deployment, so publishing ten articles costs one. A debounce, which restarts the
+  timer on every change, could postpone the rebuild forever while someone keeps editing. A fixed
+  window guarantees the site updates within about a minute.
 - A failed request is retried three times. If a build fails, the previous version stays online.
 
 ### Running it
@@ -108,8 +110,9 @@ gallery. Both only hide things, so with JavaScript off every article and picture
   site has no runtime dependency on the CMS. A test checks that the built pages never mention it.
   The cost is that build time grows with the number of images, and the CMS must be reachable from
   GitHub while a build runs.
-- **Pull requests use demo content.** They need no CMS and no secrets, and cannot leak unpublished
-  work. A single dataset, `backend/seed`, serves as both the CMS seed and this fixture.
+- **Pull requests use demo content.** They need no CMS and no secrets, so a pull request from
+  anyone can be built and tested, and the result does not depend on what the CMS holds that day.
+  A single dataset, `backend/seed`, serves as both the CMS seed and this fixture.
 - **A CMS failure fails the build.** Publishing a half-empty site would be worse than a stale one.
 - **Search** is client-side with a small inline index, ignoring accents, so "sao miguel" finds
   "São Miguel". For a few dozen articles, this needs no extra tooling. At hundreds, Pagefind would
@@ -134,13 +137,22 @@ it has no licensing issues.
 
 ## Status at the time of writing, and what is missing
 
-The whole system has been run locally: the production image with Postgres, a site built from that
-CMS, and the rebuild request sent to a stand-in for GitHub's API. The workflows pass `actionlint`
-and each of their steps has been run by hand.
+Running on GitHub and Cloudflare:
 
-**What had not yet happened is a live run of the three external steps**: pushing the image to the
-registry, deploying to Cloudflare Pages, and a real GitHub dispatch. They need accounts and
-credentials, and are described step by step in the README.
+- Both pipelines pass on every push to `main` and on pull requests.
+- The site is deployed to Cloudflare Pages: <https://tsb-far-enough.pages.dev>.
+- The backend image is tested, started and published to `ghcr.io` by the pipeline.
+
+**What is not live is the CMS itself.** No server was available in time. The deployed site is
+therefore built from the demo content, and the rebuild-on-publish flow has been tested only
+locally: the production image with Postgres, a site built from that CMS, and the rebuild request
+sent to a stand-in for GitHub's API, which the backend tests also check. Connecting it needs a
+public CMS address and a GitHub token, as described in the README.
+
+The intended host was a home server with a 2007 Intel Core 2 Quad. Strapi could not start there:
+`sharp`, its image library, uses processor instructions that CPU lacks. The native build crashes,
+the WebAssembly build needs SIMD support, and an older version crashed as well. Any reasonably
+recent x86-64 or ARM server runs it as is.
 
 Known limits:
 
@@ -149,12 +161,17 @@ Known limits:
 - Uploads live on the server's disk. Object storage would be better for more than one server.
 - Inviting a user relies on the Admin sharing the registration link, as no email is configured.
 - The backend is updated by running a command on the server, rather than automatically.
+- The rebuild timer lives in memory, so a restart inside the 60-second window loses that rebuild
+  until the next change.
+- Only the deploy step is serialised. Two builds that overlap could finish in the wrong order and
+  deploy the older content last.
 
 ## Future work
 
 In rough order of value:
 
-1. Automatic backend deployment on a new image, and scheduled backups of both volumes.
+1. Hosting the CMS, then automatic backend deployment on a new image and scheduled backups of
+   both volumes.
 2. Preview deployments of pull requests, built from the CMS's draft content.
 3. An "owner" field, so that a Moderator can hand an article over to a writer.
 4. A page per place, with a map of the trips, using the location already stored.
